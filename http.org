@@ -1,0 +1,239 @@
+* Cron Calendar API :verb:
+:properties:
+:Verb-Prelude+: (verb-set-var "username" "example")
+:Verb-Prelude+: (verb-set-var "password" "example")
+:Verb-Prelude+: (verb-set-var "token" "")
+:end:
+
+template http://localhost:8080
+Content-Type: application/json
+Session-ID: {{(verb-var token)}}
+Accept: application/json
+
+** User Management
+
+template /user
+
+*** Register
+
+#+begin_src verb :wrap src ob-verb-response
+  put /register
+
+  {
+  "username": "{{(verb-var username)}}",
+  "password": "{{(verb-var password)}}"
+  }
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+*** Login
+:properties:
+:Verb-Store: login
+:end:
+
+#+begin_src verb :wrap src ob-verb-response
+  post /login
+
+  {
+  "username": "{{(verb-var username)}}",
+  "password": "{{(verb-var password)}}"
+  }
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+*** Destroy
+
+#+begin_src verb :wrap src ob-verb-response
+  delete /destroy
+
+  {
+  "username": "{{(verb-var username)}}",
+  "password": "{{(verb-var password)}}"
+  }
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+** Category Management
+:properties:
+:Verb-Prelude: (verb-set-var "category-id" "abcdef")
+:end:
+
+template /category
+
+*** Get All Categories for User
+
+#+begin_src verb :wrap src ob-verb-response
+  post
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+*** Put Category
+
+#+begin_src verb :wrap src ob-verb-response
+  put /{{(verb-var category-id)}}
+
+  {
+  "name": "sample",
+  "desc": "a sample category for testing"
+  }  
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+*** Get Category
+
+#+begin_src verb :wrap src ob-verb-response
+  get /{{(verb-var category-id)}}
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+*** Delete Category
+
+#+begin_src verb :wrap src ob-verb-response
+  delete /{{(verb-var category-id)}}
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+
+** Cron Management
+:properties:
+:Verb-Prelude: (verb-set-var "cron-id" "abcdef")
+:end:
+
+template /cron
+
+*** Get All Crons for User
+
+#+begin_src verb :wrap src ob-verb-response
+  post
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+*** Put Cron
+
+#+begin_src verb :wrap src ob-verb-response
+  put /{{(verb-var cron-id)}}
+
+  {
+  "name": "sample",
+  "schedule": "* * * *",
+  "desc": "a sample cron for testing2",
+  "enabled": true
+  }  
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+*** Get Cron
+
+#+begin_src verb :wrap src ob-verb-response
+  get /{{(verb-var cron-id)}}
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+*** Delete Cron
+
+#+begin_src verb :wrap src ob-verb-response
+  delete /{{(verb-var cron-id)}}
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+** Task Management
+:properties:
+:Verb-Prelude: (verb-set-var "task-id" "abcdef")
+:end:
+
+template /task
+
+*** Get All Tasks for User
+
+#+begin_src verb :wrap src ob-verb-response
+  post
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+*** Put Task
+
+#+begin_src verb :wrap src ob-verb-response
+  put /{{(verb-var task-id)}}
+
+  {
+  "name": "sample"
+  }  
+#+end_src
+
+#+RESULTS:
+
+#+end_src
+
+*** Get Task
+
+#+begin_src verb :wrap src ob-verb-response
+  get /{{(verb-var task-id)}}
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+*** Delete Task
+
+#+begin_src verb :wrap src ob-verb-response
+  delete /{{(verb-var task-id)}}
+#+end_src
+
+#+RESULTS:
+#+begin_src ob-verb-response
+
+#+end_src
+
+# Local Variables:
+# eval: (verb-mode)
+# End:

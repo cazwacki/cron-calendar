@@ -24,16 +24,12 @@ func RegisterUser(context *gin.Context) {
 	// salt and hash password
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		context.Error(err)
 		return
 	}
 	user.Password = string(hash)
 	if err := database.InsertUser(user); err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		context.Error(err)
 		return
 	}
 	context.Status(http.StatusCreated)
@@ -49,9 +45,7 @@ func Login(context *gin.Context) {
 	}
 	dbUser, err := database.GetUserById(providedUser.ID)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		context.Error(err)
 		return
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(providedUser.Password))
@@ -71,18 +65,14 @@ func Login(context *gin.Context) {
 	hash := sha3.New256()
 	_, err = hash.Write([]byte(sessionId))
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		context.Error(err)
 		return
 	}
 	finalHash := hash.Sum(nil)
 	session.ID = string(finalHash)
 
 	if err = database.UpsertSession(session); err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		context.Error(err)
 		return
 	}
 
@@ -93,12 +83,17 @@ func Login(context *gin.Context) {
 }
 
 func DestroyUser(context *gin.Context) {
-	userId := fmt.Sprint(context.Get("userId"))
+	value, exists := context.Get("userId")
+	if !exists {
+		context.JSON(http.StatusUnauthorized, gin.H{
+			"error": "cron-calendar: attempt to delete other user ID",
+		})
+		return
+	}
+	userId := fmt.Sprint(value)
 	var providedUser database.User
 	if err := context.ShouldBindJSON(&providedUser); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		context.Error(err)
 		return
 	}
 	if userId != providedUser.ID {
@@ -109,23 +104,17 @@ func DestroyUser(context *gin.Context) {
 	}
 	dbUser, err := database.GetUserById(providedUser.ID)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		context.Error(err)
 		return
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(providedUser.Password))
 	if err != nil {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": err.Error(),
-		})
+		context.Error(err)
 		return
 	}
 
 	if err := database.DeleteUserById(providedUser.ID); err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		context.Error(err)
 		return
 	}
 

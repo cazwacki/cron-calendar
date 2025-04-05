@@ -47,12 +47,13 @@ type Cron struct {
 }
 
 type Task struct {
-	ID          string     `json:"task_id" binding:"required"`
+	ID          string     `json:"task_id"`
+	Name        string     `json:"name" binding:"required"`
 	UserID      string     `json:"user_id"`
 	CategoryID  *string    `json:"category_id"`
 	CronID      *string    `json:"cron_id"`
 	CreatedAt   time.Time  `json:"created_at"`
-	CompletedAt *time.Time `json:"completed" binding:"required"`
+	CompletedAt *time.Time `json:"completed_at"`
 }
 
 var db *gorm.DB

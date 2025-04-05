@@ -22,47 +22,53 @@ func main() {
 	startHttpService()
 }
 
+func generateTasks(ctx context.Context) (int, error) {
+	crons, err := database.GetAllCrons()
+	if err != nil {
+		fmt.Printf("error getting crons: %s", err.Error())
+		return 1, err
+	}
+	for _, cron := range crons {
+		completeExpression := fmt.Sprintf("0 0 0 %s", cron.Schedule)
+		now := time.Now()
+		nowTruncated := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		taskDue, err := gronx.New().IsDue(completeExpression, nowTruncated)
+		if err != nil {
+			fmt.Printf("cron evaluation failed: %s\n", err.Error())
+			return 1, err
+		}
+		shouldCreateTask := taskDue && cron.Enabled
+		if shouldCreateTask {
+			var newTask database.Task
+			uuid, err := uuid.NewV7()
+			if err != nil {
+				fmt.Printf("failed to generate new uuid: %s\n", err.Error())
+				return 1, err
+			}
+			newTask.ID = uuid.String()
+			newTask.Name = cron.Name
+			newTask.UserID = cron.UserID
+			newTask.CategoryID = cron.CategoryID
+			newTask.CronID = &cron.ID
+			fmt.Printf("%+v\n", newTask)
+			database.UpsertTask(newTask)
+		}
+	}
+	return 0, err
+}
+
 func startTasker() {
 	cronHour := os.Getenv("LIST_GEN_HOUR")
 	tasker := tasker.New(tasker.Option{
 		Verbose: false,
 	})
-	tasker.Task(fmt.Sprintf("0 %s * * *", cronHour), func(ctx context.Context) (int, error) {
-		crons, err := database.GetAllCrons()
-		if err != nil {
-			tasker.Log.Printf("error getting crons: %s", err.Error())
-			return 1, err
-		}
-		for _, cron := range crons {
-			completeExpression := fmt.Sprintf("0 0 0 %s", cron.Schedule)
-			now := time.Now()
-			nowTruncated := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-			shouldCreateTask, err := gronx.New().IsDue(completeExpression, nowTruncated)
-			if err != nil {
-				fmt.Println("failed to check cron validity")
-				// proper error logging
-			}
-			if shouldCreateTask {
-				var newTask database.Task
-				uuid, err := uuid.NewV7()
-				if err != nil {
-					fmt.Println("failed to generate new uuid")
-					// proper error logging
-				}
-				newTask.ID = uuid.String()
-				newTask.UserID = cron.UserID
-				newTask.CategoryID = cron.CategoryID
-				newTask.CronID = &cron.ID
-				database.UpsertTask(newTask)
-			}
-		}
-		return 0, err
-	})
+	tasker.Task(fmt.Sprintf("0 %s * * *", cronHour), generateTasks)
 	tasker.Run()
 }
 
 func startHttpService() {
 	router := gin.Default()
+	router.Use(middleware.GenerateErrorResponse())
 
 	router.PUT("/user/register", handlers.RegisterUser)
 	router.POST("/user/login", handlers.Login)
