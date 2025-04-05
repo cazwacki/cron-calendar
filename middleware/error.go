@@ -5,24 +5,44 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+
+	errortypes "cron-calendar/error_types"
 )
 
 func GenerateErrorResponse() gin.HandlerFunc {
 	return func(context *gin.Context) {
 		context.Next()
 
-		error := context.Errors[0]
+		error := context.Errors.Last().Err
 
-		if error.Error() == "record not found" {
-			context.Status(404)
+		_, isAuthorizationError := error.(errortypes.AuthorizationError)
+		if isAuthorizationError {
+			context.AbortWithStatus(401)
 			return
 		}
 
-		if strings.Contains(error.Error(), "Field validation") {
-			context.JSON(400, error.JSON())
+		_, isValidationError := error.(errortypes.ValidationError)
+		if isValidationError {
+			context.AbortWithStatusJSON(400, gin.H{
+				"error": error.Error(),
+			})
 			return
 		}
 
-		context.JSON(http.StatusInternalServerError, error.JSON())
+		_, isDatabaseError := error.(errortypes.DatabaseError)
+		if isDatabaseError {
+			if error.Error() == "record not found" {
+				context.AbortWithStatus(404)
+				return
+			}
+			if strings.Contains(error.Error(), "constraint") {
+				context.AbortWithStatus(409)
+				return
+			}
+			context.AbortWithStatus(503)
+			return
+		}
+
+		context.AbortWithStatus(http.StatusInternalServerError)
 	}
 }

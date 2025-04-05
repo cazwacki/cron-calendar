@@ -18,7 +18,7 @@ import (
 
 func main() {
 	database.InitializeTables()
-	go startTasker()
+	// go startTasker()
 	startHttpService()
 }
 

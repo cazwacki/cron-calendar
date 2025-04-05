@@ -1,87 +1,59 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"cron-calendar/database"
+	errortypes "cron-calendar/error_types"
 )
 
 func PutCron(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: user not identified",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
 	var cron database.Cron
+	cron.UserID = context.GetString("userId")
 	cron.ID = context.Param("cronId")
 	if err := context.ShouldBindJSON(&cron); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateValidationError(err.Error()))
 		return
 	}
-	cron.UserID = string(userId)
+	// todo: validate schedule
 	if err := database.UpsertCron(cron); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
-	context.Status(http.StatusCreated)
+	context.AbortWithStatus(http.StatusCreated)
 }
 
 func GetCron(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: user not identified",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
+	userId := context.GetString("userId")
 	cronId := context.Param("cronId")
 	cron, err := database.GetCronByUserAndId(userId, cronId)
 	if err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
 
-	context.JSON(http.StatusOK, cron)
+	context.AbortWithStatusJSON(http.StatusOK, cron)
 }
 
 func DeleteCron(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: user not identified",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
+	userId := context.GetString("userId")
 	cronId := context.Param("cronId")
 	if err := database.DeleteCronByUserAndId(userId, cronId); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
 
-	context.Status(http.StatusNoContent)
+	context.AbortWithStatus(http.StatusNoContent)
 }
 
 func GetAllCrons(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: user not identified",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
+	userId := context.GetString("userId")
 	crons, err := database.GetCronsByUserId(userId)
 	if err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
-	context.JSON(http.StatusOK, crons)
+	context.AbortWithStatusJSON(http.StatusOK, crons)
 }

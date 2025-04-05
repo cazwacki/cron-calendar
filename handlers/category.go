@@ -1,87 +1,58 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"cron-calendar/database"
+	errortypes "cron-calendar/error_types"
 )
 
 func PutCategory(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: user not identified",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
 	var category database.Category
+	category.UserID = context.GetString("userId")
 	category.ID = context.Param("categoryId")
 	if err := context.ShouldBindJSON(&category); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateValidationError(err.Error()))
 		return
 	}
-	category.UserID = string(userId)
 	if err := database.UpsertCategory(category); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
-	context.Status(http.StatusCreated)
+	context.AbortWithStatus(http.StatusCreated)
 }
 
 func GetCategory(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: user not identified",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
+	userId := context.GetString("userId")
 	categoryId := context.Param("categoryId")
 	category, err := database.GetCategoryByUserAndId(userId, categoryId)
 	if err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
 
-	context.JSON(http.StatusAccepted, category)
+	context.AbortWithStatusJSON(http.StatusAccepted, category)
 }
 
 func DeleteCategory(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: user not identified",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
+	userId := context.GetString("userId")
 	categoryId := context.Param("categoryId")
 	if err := database.DeleteCategoryByUserAndId(userId, categoryId); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
 
-	context.Status(http.StatusNoContent)
+	context.AbortWithStatus(http.StatusNoContent)
 }
 
 func GetAllCategories(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: user not identified",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
+	userId := context.GetString("userId")
 	categories, err := database.GetCategoriesByUserId(userId)
 	if err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
-	context.JSON(http.StatusAccepted, categories)
+	context.AbortWithStatusJSON(http.StatusAccepted, categories)
 }

@@ -3,7 +3,6 @@ package handlers
 import (
 	"crypto/rand"
 	"crypto/sha3"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -11,14 +10,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"cron-calendar/database"
+	errortypes "cron-calendar/error_types"
 )
 
 func RegisterUser(context *gin.Context) {
 	var user database.User
 	if err := context.ShouldBindJSON(&user); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		context.Error(errortypes.GenerateValidationError(err.Error()))
 		return
 	}
 	// salt and hash password
@@ -29,30 +27,26 @@ func RegisterUser(context *gin.Context) {
 	}
 	user.Password = string(hash)
 	if err := database.InsertUser(user); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
-	context.Status(http.StatusCreated)
+	context.AbortWithStatus(http.StatusCreated)
 }
 
 func Login(context *gin.Context) {
 	var providedUser database.User
 	if err := context.ShouldBindJSON(&providedUser); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		context.Error(errortypes.GenerateValidationError(err.Error()))
 		return
 	}
 	dbUser, err := database.GetUserById(providedUser.ID)
 	if err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(providedUser.Password))
 	if err != nil {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": err.Error(),
-		})
+		context.Error(errortypes.GenerateAuthorizationError("invalid password"))
 		return
 	}
 
@@ -72,51 +66,41 @@ func Login(context *gin.Context) {
 	session.ID = string(finalHash)
 
 	if err = database.UpsertSession(session); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
 
 	// restore session ID for response
 	session.ID = sessionId
 
-	context.JSON(http.StatusOK, session)
+	context.AbortWithStatusJSON(http.StatusOK, session)
 }
 
 func DestroyUser(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: attempt to delete other user ID",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
+	userId := context.GetString("userId")
 	var providedUser database.User
 	if err := context.ShouldBindJSON(&providedUser); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateValidationError(err.Error()))
 		return
 	}
 	if userId != providedUser.ID {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: attempt to delete other user ID",
-		})
-		return
+		context.Error(errortypes.GenerateAuthorizationError("attempt to delete other user"))
 	}
 	dbUser, err := database.GetUserById(providedUser.ID)
 	if err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(providedUser.Password))
 	if err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateAuthorizationError("invalid password"))
 		return
 	}
 
 	if err := database.DeleteUserById(providedUser.ID); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
 
-	context.Status(http.StatusNoContent)
+	context.AbortWithStatus(http.StatusNoContent)
 }

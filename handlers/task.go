@@ -1,87 +1,58 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"cron-calendar/database"
+	errortypes "cron-calendar/error_types"
 )
 
 func PutTask(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: user not identified",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
 	var task database.Task
+	task.UserID = context.GetString("userId")
 	task.ID = context.Param("taskId")
 	if err := context.ShouldBindJSON(&task); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateValidationError(err.Error()))
 		return
 	}
-	task.UserID = string(userId)
 	if err := database.UpsertTask(task); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
-	context.Status(http.StatusCreated)
+	context.AbortWithStatus(http.StatusCreated)
 }
 
 func GetTask(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: user not identified",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
+	userId := context.GetString("userId")
 	taskId := context.Param("taskId")
 	task, err := database.GetTaskByUserAndId(userId, taskId)
 	if err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
 
-	context.JSON(http.StatusOK, task)
+	context.AbortWithStatusJSON(http.StatusOK, task)
 }
 
 func DeleteTask(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: user not identified",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
+	userId := context.GetString("userId")
 	taskId := context.Param("taskId")
 	if err := database.DeleteTaskByUserAndId(userId, taskId); err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
 
-	context.Status(http.StatusNoContent)
+	context.AbortWithStatus(http.StatusNoContent)
 }
 
 func GetAllTasks(context *gin.Context) {
-	value, exists := context.Get("userId")
-	if !exists {
-		context.JSON(http.StatusUnauthorized, gin.H{
-			"error": "cron-calendar: user not identified",
-		})
-		return
-	}
-	userId := fmt.Sprint(value)
+	userId := context.GetString("userId")
 	tasks, err := database.GetTasksByUserId(userId)
 	if err != nil {
-		context.Error(err)
+		context.Error(errortypes.GenerateDatabaseError(err.Error()))
 		return
 	}
-	context.JSON(http.StatusOK, tasks)
+	context.AbortWithStatusJSON(http.StatusOK, tasks)
 }

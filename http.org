@@ -2,7 +2,7 @@
 :properties:
 :Verb-Prelude+: (verb-set-var "username" "example")
 :Verb-Prelude+: (verb-set-var "password" "example")
-:Verb-Prelude+: (verb-set-var "token" "")
+:Verb-Prelude+: (verb-set-var "token" "M5V56SZ2VIPTOVA3SZLWQDQWIC")
 :end:
 
 template http://localhost:8080
@@ -27,7 +27,9 @@ template /user
 
 #+RESULTS:
 #+begin_src ob-verb-response
-
+HTTP/1.1 409 Conflict
+Date: Sat, 05 Apr 2025 22:26:37 GMT
+Content-Length: 0
 #+end_src
 
 *** Login
@@ -46,7 +48,16 @@ template /user
 
 #+RESULTS:
 #+begin_src ob-verb-response
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Sat, 05 Apr 2025 22:26:57 GMT
+Content-Length: 109
 
+{
+  "session_id": "M5V56SZ2VIPTOVA3SZLWQDQWIC",
+  "user_id": "example",
+  "expires_at": "2025-04-06T02:26:57.702047524Z"
+}
 #+end_src
 
 *** Destroy
@@ -80,7 +91,12 @@ template /category
 
 #+RESULTS:
 #+begin_src ob-verb-response
+HTTP/1.1 202 Accepted
+Content-Type: application/json; charset=utf-8
+Date: Sat, 05 Apr 2025 22:27:34 GMT
+Content-Length: 2
 
+[]
 #+end_src
 
 *** Put Category
@@ -96,7 +112,9 @@ template /category
 
 #+RESULTS:
 #+begin_src ob-verb-response
-
+HTTP/1.1 201 Created
+Date: Sat, 05 Apr 2025 22:27:43 GMT
+Content-Length: 0
 #+end_src
 
 *** Get Category
@@ -107,7 +125,9 @@ template /category
 
 #+RESULTS:
 #+begin_src ob-verb-response
-
+HTTP/1.1 404 Not Found
+Date: Sat, 05 Apr 2025 22:28:03 GMT
+Content-Length: 0
 #+end_src
 
 *** Delete Category
@@ -118,7 +138,8 @@ template /category
 
 #+RESULTS:
 #+begin_src ob-verb-response
-
+HTTP/1.1 204 No Content
+Date: Sat, 05 Apr 2025 22:27:59 GMT
 #+end_src
 
 
@@ -137,7 +158,12 @@ template /cron
 
 #+RESULTS:
 #+begin_src ob-verb-response
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Sat, 05 Apr 2025 22:28:07 GMT
+Content-Length: 2
 
+[]
 #+end_src
 
 *** Put Cron
@@ -155,7 +181,14 @@ template /cron
 
 #+RESULTS:
 #+begin_src ob-verb-response
+HTTP/1.1 400 Bad Request
+Content-Type: application/json; charset=utf-8
+Date: Sat, 05 Apr 2025 22:28:14 GMT
+Content-Length: 91
 
+{
+  "error": "Key: 'Cron.Name' Error:Field validation for 'Name' failed on the 'required' tag"
+}
 #+end_src
 
 *** Get Cron

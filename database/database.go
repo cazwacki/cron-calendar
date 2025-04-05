@@ -10,8 +10,8 @@ import (
 )
 
 type User struct {
-	ID               string     `json:"username" binding:"required"`
-	Password         string     `json:"password" binding:"required"`
+	ID               string     `json:"username" binding:"required" gorm:"default:null"`
+	Password         string     `json:"password" binding:"required" gorm:"not null; default:null"`
 	Alias            *string    `json:"alias"`
 	CreatedAt        time.Time  `json:"created_at"`
 	UpdatedAt        time.Time  `json:"updated_at"`
@@ -20,36 +20,36 @@ type User struct {
 }
 
 type Session struct {
-	ID        string    `json:"session_id"`
-	UserID    string    `json:"user_id"`
+	ID        string    `json:"session_id" gorm:"default:null"`
+	UserID    string    `json:"user_id" gorm:"not null; default:null"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
 type Category struct {
-	ID        string    `json:"category_id"`
-	UserID    string    `json:"user_id"`
-	Name      string    `json:"name" binding:"required"`
+	ID        string    `json:"category_id" gorm:"default:null"`
+	UserID    string    `json:"user_id" gorm:"not null; default:null"`
+	Name      string    `json:"name" binding:"required" gorm:"not null; default:null"`
 	Desc      *string   `json:"desc"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Cron struct {
-	ID         string    `json:"cron_id"`
-	UserID     string    `json:"user_id"`
+	ID         string    `json:"cron_id" gorm:"default:null"`
+	UserID     string    `json:"user_id" gorm:"not null; default:null"`
 	CategoryID *string   `json:"category_id"`
-	Schedule   string    `json:"schedule" binding:"required"`
-	Name       string    `json:"name" binding:"required"`
+	Schedule   string    `json:"schedule" binding:"required" gorm:"not null; default:null"`
+	Name       string    `json:"name" binding:"required" gorm:"not null; default:null"`
 	Desc       *string   `json:"desc"`
-	Enabled    bool      `json:"enabled" binding:"required"`
+	Enabled    bool      `json:"enabled" binding:"required" gorm:"not null; default:null"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type Task struct {
-	ID          string     `json:"task_id"`
-	Name        string     `json:"name" binding:"required"`
-	UserID      string     `json:"user_id"`
+	ID          string     `json:"task_id" gorm:"default:null"`
+	Name        string     `json:"name" binding:"required" gorm:"not null; default:null"`
+	UserID      string     `json:"user_id" gorm:"not null; default:null"`
 	CategoryID  *string    `json:"category_id"`
 	CronID      *string    `json:"cron_id"`
 	CreatedAt   time.Time  `json:"created_at"`
