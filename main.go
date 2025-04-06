@@ -10,40 +10,42 @@ import (
 	"github.com/adhocore/gronx/pkg/tasker"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"cron-calendar/database"
 	"cron-calendar/handlers"
 	"cron-calendar/middleware"
 )
 
-func main() {
-	database.InitializeTables()
-	// go startTasker()
-	startHttpService()
-}
+var fileContext = log.With().Str("file", "main.go")
 
 func generateTasks(ctx context.Context) (int, error) {
+	functionLogger := fileContext.Str("function", "generateTasks").Logger()
+	functionLogger.Info().Msg("invoked")
+
 	crons, err := database.GetAllCrons()
 	if err != nil {
-		fmt.Printf("error getting crons: %s", err.Error())
+		functionLogger.Err(err).Msg("failed to get crons from db")
 		return 1, err
 	}
+
 	for _, cron := range crons {
 		completeExpression := fmt.Sprintf("0 0 0 %s", cron.Schedule)
 		now := time.Now()
 		nowTruncated := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 		taskDue, err := gronx.New().IsDue(completeExpression, nowTruncated)
 		if err != nil {
-			fmt.Printf("cron evaluation failed: %s\n", err.Error())
-			return 1, err
+			functionLogger.Warn().AnErr("err", err).Msgf("failed to evaluate cron %s's expression: %s; skipping", cron.ID, cron.Schedule)
+			continue
 		}
 		shouldCreateTask := taskDue && cron.Enabled
 		if shouldCreateTask {
 			var newTask database.Task
+			functionLogger.Info().Msgf("cron %s is due for task creation", cron.ID)
 			uuid, err := uuid.NewV7()
 			if err != nil {
-				fmt.Printf("failed to generate new uuid: %s\n", err.Error())
-				return 1, err
+				functionLogger.Warn().AnErr("err", err).Msgf("failed to generate uuid for cron %s; skipping", cron.ID)
+				continue
 			}
 			newTask.ID = uuid.String()
 			newTask.Name = cron.Name
@@ -51,22 +53,34 @@ func generateTasks(ctx context.Context) (int, error) {
 			newTask.CategoryID = cron.CategoryID
 			newTask.CronID = &cron.ID
 			fmt.Printf("%+v\n", newTask)
-			database.UpsertTask(newTask)
+			if err := database.UpsertTask(newTask); err != nil {
+				functionLogger.Err(err).Msg("failed to write back to database")
+			}
 		}
 	}
+
+	functionLogger.Info().Msg("finished processing crons")
 	return 0, err
 }
 
 func startTasker() {
+	functionLogger := fileContext.Str("function", "startTasker").Logger()
+	functionLogger.Info().Msg("invoked")
+
 	cronHour := os.Getenv("LIST_GEN_HOUR")
 	tasker := tasker.New(tasker.Option{
 		Verbose: false,
 	})
 	tasker.Task(fmt.Sprintf("0 %s * * *", cronHour), generateTasks)
+	functionLogger.Info().Msg("running task manager")
 	tasker.Run()
+	functionLogger.Info().Msg("complete")
 }
 
 func startHttpService() {
+	functionLogger := fileContext.Str("function", "startHttpService").Logger()
+	functionLogger.Info().Msg("invoked")
+
 	router := gin.Default()
 	router.Use(middleware.GenerateErrorResponse())
 
@@ -93,5 +107,16 @@ func startHttpService() {
 		authNeeded.GET("/task/:taskId", handlers.GetTask)
 		authNeeded.DELETE("/task/:taskId", handlers.DeleteTask)
 	}
+	functionLogger.Info().Msg("listening")
 	router.Run()
+	functionLogger.Info().Msg("complete")
+}
+
+func main() {
+	functionLogger := fileContext.Str("function", "main").Logger()
+	functionLogger.Info().Msg("started")
+	database.InitializeTables()
+	go startTasker()
+	startHttpService()
+	functionLogger.Info().Msg("complete")
 }
