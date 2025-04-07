@@ -6,20 +6,28 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 
 	"cron-calendar/database"
 )
 
+var authorizeContext = log.With().Str("file", "authorize.go")
+
 func ValidateAuthorization() gin.HandlerFunc {
 	return func(context *gin.Context) {
+		functionLogger := authorizeContext.Str("function", "ValidateAuthorization").Logger()
+		functionLogger.Debug().Msg("invoked")
+
 		sessionId := context.GetHeader("Session-ID")
 		if sessionId == "" {
+			functionLogger.Warn().Msg("attempt to hit auth-guarded endpoint without a session")
 			context.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 		hash := sha3.New256()
 		_, err := hash.Write([]byte(sessionId))
 		if err != nil {
+			functionLogger.Err(err).Msg("failed to write the generated session ID to hash")
 			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
@@ -30,16 +38,19 @@ func ValidateAuthorization() gin.HandlerFunc {
 
 		session, err := database.GetSessionById(sessionId)
 		if err != nil {
+			functionLogger.Err(err).Msg("failed to fetch user session from database")
 			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
 		if time.Now().After(session.ExpiresAt) {
+			functionLogger.Debug().Msg("failed to write the generated session ID to hash")
 			context.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
+		functionLogger.Debug().Msg("returning with success")
 		context.Set("userId", session.UserID)
 		context.Next()
 	}
