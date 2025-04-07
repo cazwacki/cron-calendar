@@ -14,10 +14,9 @@ var errorContext = log.With().Str("file", "error.go")
 
 func GenerateErrorResponse() gin.HandlerFunc {
 	return func(context *gin.Context) {
+		context.Next()
 		functionLogger := errorContext.Str("function", "GenerateErrorResponse").Logger()
 		functionLogger.Debug().Msg("invoked")
-
-		context.Next()
 
 		error := context.Errors.Last().Err
 		functionLogger.Debug().Msgf("given error: %s", error.Error())
