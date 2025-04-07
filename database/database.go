@@ -196,7 +196,7 @@ func GetSessionById(sessionId string) (Session, error) {
 	return session, nil
 }
 
-func UpsertCategory(category Category, userId string) error {
+func UpsertCategory(category Category) error {
 	functionLogger := databaseContext.Str("function", "UpsertCategory").Logger()
 	functionLogger.Debug().Msg("invoked")
 
@@ -208,7 +208,7 @@ func UpsertCategory(category Category, userId string) error {
 
 	var existingCategory Category
 	db.First(&existingCategory, "id = ?", existingCategory.ID)
-	if existingCategory.UserID != userId {
+	if existingCategory.UserID != category.UserID {
 		functionLogger.Warn().Msg("attempt to modify another user's category")
 		return errors.New("constraint: attempt to modify another user's category")
 	}
@@ -284,7 +284,7 @@ func GetCategoriesByUserId(userId string) ([]Category, error) {
 	return categories, nil
 }
 
-func UpsertCron(cron Cron, userId string) error {
+func UpsertCron(cron Cron) error {
 	functionLogger := databaseContext.Str("function", "UpsertCron").Logger()
 	functionLogger.Debug().Msg("invoked")
 
@@ -296,7 +296,7 @@ func UpsertCron(cron Cron, userId string) error {
 
 	var existingCron Cron
 	db.First(&existingCron, "id = ?", cron.ID)
-	if cron.UserID != userId {
+	if cron.UserID != cron.UserID {
 		functionLogger.Warn().Msg("attempt to modify another user's cron")
 		return errors.New("constraint: attempt to modify another user's cron")
 	}
@@ -390,7 +390,7 @@ func GetAllCrons() ([]Cron, error) {
 	return crons, nil
 }
 
-func UpsertTask(task Task, userId string) error {
+func UpsertTask(task Task) error {
 	functionLogger := databaseContext.Str("function", "UpsertTask").Logger()
 	functionLogger.Debug().Msg("invoked")
 
@@ -402,7 +402,7 @@ func UpsertTask(task Task, userId string) error {
 
 	var existingTask Task
 	db.First(&existingTask, "id = ?", existingTask.ID)
-	if existingTask.UserID != userId {
+	if existingTask.UserID != task.UserID {
 		functionLogger.Warn().Msg("attempt to modify another user's task")
 		return errors.New("constraint: attempt to modify another user's task")
 	}
