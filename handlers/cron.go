@@ -21,14 +21,12 @@ func PutCron(context *gin.Context) {
 	cron.ID = context.Param("cronId")
 	if err := context.ShouldBindJSON(&cron); err != nil {
 		functionLogger.Err(err).Msg("failed to bind payload to cron structure")
-		context.Error(errortypes.GenerateValidationError(err.Error()))
-		return
+		panic(errortypes.GenerateValidationError(err.Error()))
 	}
 	// todo: validate schedule
 	if err := database.UpsertCron(cron); err != nil {
 		functionLogger.Err(err).Msg("failed to write cron to database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -44,8 +42,7 @@ func GetCron(context *gin.Context) {
 	cron, err := database.GetCronByUserAndId(userId, cronId)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to read cron from database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -60,8 +57,7 @@ func DeleteCron(context *gin.Context) {
 	cronId := context.Param("cronId")
 	if err := database.DeleteCronByUserAndId(userId, cronId); err != nil {
 		functionLogger.Err(err).Msg("failed to delete cron from database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -76,8 +72,7 @@ func GetAllCrons(context *gin.Context) {
 	crons, err := database.GetCronsByUserId(userId)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to get crons from database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")

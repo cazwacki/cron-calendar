@@ -21,14 +21,12 @@ func PutTask(context *gin.Context) {
 	task.ID = context.Param("taskId")
 	if err := context.ShouldBindJSON(&task); err != nil {
 		functionLogger.Err(err).Msg("failed to bind payload to task structure")
-		context.Error(errortypes.GenerateValidationError(err.Error()))
-		return
+		panic(errortypes.GenerateValidationError(err.Error()))
 	}
 
 	if err := database.UpsertTask(task); err != nil {
 		functionLogger.Err(err).Msg("failed to write task to database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -44,8 +42,7 @@ func GetTask(context *gin.Context) {
 	task, err := database.GetTaskByUserAndId(userId, taskId)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to read task from database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -60,8 +57,7 @@ func DeleteTask(context *gin.Context) {
 	taskId := context.Param("taskId")
 	if err := database.DeleteTaskByUserAndId(userId, taskId); err != nil {
 		functionLogger.Err(err).Msg("failed to delete task from database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -76,8 +72,7 @@ func GetAllTasks(context *gin.Context) {
 	tasks, err := database.GetTasksByUserId(userId)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to get tasks from database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")

@@ -23,23 +23,20 @@ func RegisterUser(context *gin.Context) {
 	var user database.User
 	if err := context.ShouldBindJSON(&user); err != nil {
 		functionLogger.Err(err).Msg("failed to bind payload to user structure")
-		context.Error(errortypes.GenerateValidationError(err.Error()))
-		return
+		panic(errortypes.GenerateValidationError(err.Error()))
 	}
 
 	// salt and hash password
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to hash the password")
-		context.Error(err)
-		return
+		panic(err)
 	}
 
 	user.Password = string(hash)
 	if err := database.InsertUser(user); err != nil {
 		functionLogger.Err(err).Msg("failed to write user to database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -53,21 +50,18 @@ func Login(context *gin.Context) {
 	var providedUser database.User
 	if err := context.ShouldBindJSON(&providedUser); err != nil {
 		functionLogger.Err(err).Msg("failed to bind payload to user structure")
-		context.Error(errortypes.GenerateValidationError(err.Error()))
-		return
+		panic(errortypes.GenerateValidationError(err.Error()))
 	}
 
 	dbUser, err := database.GetUserById(providedUser.ID)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to get user from database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(providedUser.Password)); err != nil {
 		functionLogger.Err(err).Msg("failed to compare the password to its hashed equivalent")
-		context.Error(errortypes.GenerateAuthorizationError("invalid password"))
-		return
+		panic(errortypes.GenerateAuthorizationError("invalid password"))
 	}
 
 	// generate user session
@@ -80,16 +74,14 @@ func Login(context *gin.Context) {
 	_, err = hash.Write([]byte(sessionId))
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to write the generated session ID to hash")
-		context.Error(err)
-		return
+		panic(err)
 	}
 	finalHash := hash.Sum(nil)
 	session.ID = string(finalHash)
 
 	if err := database.UpsertSession(session); err != nil {
 		functionLogger.Err(err).Msg("failed to write new session to database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	// restore session ID for response
@@ -107,33 +99,28 @@ func DestroyUser(context *gin.Context) {
 	var providedUser database.User
 	if err := context.ShouldBindJSON(&providedUser); err != nil {
 		functionLogger.Err(err).Msg("failed to bind payload to user structure")
-		context.Error(errortypes.GenerateValidationError(err.Error()))
-		return
+		panic(errortypes.GenerateValidationError(err.Error()))
 	}
 
 	if userId != providedUser.ID {
 		functionLogger.Warn().Msgf("user %s attempted to delete user with id %s", userId, providedUser.ID)
-		context.Error(errortypes.GenerateAuthorizationError("attempt to delete other user"))
-		return
+		panic(errortypes.GenerateAuthorizationError("attempt to delete other user"))
 	}
 
 	dbUser, err := database.GetUserById(providedUser.ID)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to get user from database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(providedUser.Password)); err != nil {
 		functionLogger.Err(err).Msg("failed to compare the password to its hashed equivalent")
-		context.Error(errortypes.GenerateAuthorizationError("invalid password"))
-		return
+		panic(errortypes.GenerateAuthorizationError("invalid password"))
 	}
 
 	if err := database.DeleteUserById(providedUser.ID); err != nil {
 		functionLogger.Err(err).Msg("failed to delete user from database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")

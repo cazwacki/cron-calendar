@@ -21,14 +21,12 @@ func PutCategory(context *gin.Context) {
 	category.ID = context.Param("categoryId")
 	if err := context.ShouldBindJSON(&category); err != nil {
 		functionLogger.Err(err).Msg("failed to bind payload to category structure")
-		context.Error(errortypes.GenerateValidationError(err.Error()))
-		return
+		panic(errortypes.GenerateValidationError(err.Error()))
 	}
 
 	if err := database.UpsertCategory(category); err != nil {
 		functionLogger.Err(err).Msg("failed to write category to database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -44,8 +42,7 @@ func GetCategory(context *gin.Context) {
 	category, err := database.GetCategoryByUserAndId(userId, categoryId)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to read category from database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -60,8 +57,7 @@ func DeleteCategory(context *gin.Context) {
 	categoryId := context.Param("categoryId")
 	if err := database.DeleteCategoryByUserAndId(userId, categoryId); err != nil {
 		functionLogger.Err(err).Msg("failed to delete category from database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -76,8 +72,7 @@ func GetAllCategories(context *gin.Context) {
 	categories, err := database.GetCategoriesByUserId(userId)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to get categories from database")
-		context.Error(errortypes.GenerateDatabaseError(err.Error()))
-		return
+		panic(errortypes.GenerateDatabaseError(err.Error()))
 	}
 
 	functionLogger.Debug().Msg("returning with success")
