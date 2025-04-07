@@ -21,7 +21,7 @@ var fileContext = log.With().Str("file", "main.go")
 
 func generateTasks(ctx context.Context) (int, error) {
 	functionLogger := fileContext.Str("function", "generateTasks").Logger()
-	functionLogger.Info().Msg("invoked")
+	functionLogger.Debug().Msg("invoked")
 
 	crons, err := database.GetAllCrons()
 	if err != nil {
@@ -41,7 +41,7 @@ func generateTasks(ctx context.Context) (int, error) {
 		shouldCreateTask := taskDue && cron.Enabled
 		if shouldCreateTask {
 			var newTask database.Task
-			functionLogger.Info().Msgf("cron %s is due for task creation", cron.ID)
+			functionLogger.Debug().Msgf("cron %s is due for task creation", cron.ID)
 			uuid, err := uuid.NewV7()
 			if err != nil {
 				functionLogger.Warn().AnErr("err", err).Msgf("failed to generate uuid for cron %s; skipping", cron.ID)
@@ -59,27 +59,27 @@ func generateTasks(ctx context.Context) (int, error) {
 		}
 	}
 
-	functionLogger.Info().Msg("finished processing crons")
+	functionLogger.Debug().Msg("finished processing crons")
 	return 0, err
 }
 
 func startTasker() {
 	functionLogger := fileContext.Str("function", "startTasker").Logger()
-	functionLogger.Info().Msg("invoked")
+	functionLogger.Debug().Msg("invoked")
 
 	cronHour := os.Getenv("LIST_GEN_HOUR")
 	tasker := tasker.New(tasker.Option{
 		Verbose: false,
 	})
 	tasker.Task(fmt.Sprintf("0 %s * * *", cronHour), generateTasks)
-	functionLogger.Info().Msg("running task manager")
+	functionLogger.Debug().Msg("running task manager")
 	tasker.Run()
-	functionLogger.Info().Msg("complete")
+	functionLogger.Debug().Msg("complete")
 }
 
 func startHttpService() {
 	functionLogger := fileContext.Str("function", "startHttpService").Logger()
-	functionLogger.Info().Msg("invoked")
+	functionLogger.Debug().Msg("invoked")
 
 	router := gin.Default()
 	router.Use(middleware.GenerateErrorResponse())
@@ -107,16 +107,16 @@ func startHttpService() {
 		authNeeded.GET("/task/:taskId", handlers.GetTask)
 		authNeeded.DELETE("/task/:taskId", handlers.DeleteTask)
 	}
-	functionLogger.Info().Msg("listening")
+	functionLogger.Debug().Msg("listening")
 	router.Run()
-	functionLogger.Info().Msg("complete")
+	functionLogger.Debug().Msg("complete")
 }
 
 func main() {
 	functionLogger := fileContext.Str("function", "main").Logger()
-	functionLogger.Info().Msg("started")
+	functionLogger.Debug().Msg("started")
 	database.InitializeTables()
 	go startTasker()
 	startHttpService()
-	functionLogger.Info().Msg("complete")
+	functionLogger.Debug().Msg("complete")
 }
