@@ -82,7 +82,7 @@ func startHttpService() {
 	functionLogger.Debug().Msg("invoked")
 
 	router := gin.Default()
-	router.Use(middleware.GenerateErrorResponse())
+	router.Use(gin.CustomRecovery(middleware.GenerateErrorResponse))
 
 	router.PUT("/user/register", handlers.RegisterUser)
 	router.POST("/user/login", handlers.Login)
