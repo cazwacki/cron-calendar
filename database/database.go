@@ -196,7 +196,7 @@ func GetSessionById(sessionId string) (Session, error) {
 	return session, nil
 }
 
-func UpsertCategory(category Category) error {
+func UpsertCategory(category Category, userId string) error {
 	functionLogger := databaseContext.Str("function", "UpsertCategory").Logger()
 	functionLogger.Debug().Msg("invoked")
 
@@ -205,7 +205,14 @@ func UpsertCategory(category Category) error {
 		functionLogger.Error().Msg("failed to get database connection")
 		return errors.New("failed to get database connection")
 	}
-	// todo validate the user owns the existing category or fail
+
+	var existingCategory Category
+	db.First(&existingCategory, "id = ?", existingCategory.ID)
+	if existingCategory.UserID != userId {
+		functionLogger.Warn().Msg("attempt to modify another user's category")
+		return errors.New("constraint: attempt to modify another user's category")
+	}
+
 	result := db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&category)
@@ -277,7 +284,7 @@ func GetCategoriesByUserId(userId string) ([]Category, error) {
 	return categories, nil
 }
 
-func UpsertCron(cron Cron) error {
+func UpsertCron(cron Cron, userId string) error {
 	functionLogger := databaseContext.Str("function", "UpsertCron").Logger()
 	functionLogger.Debug().Msg("invoked")
 
@@ -286,10 +293,15 @@ func UpsertCron(cron Cron) error {
 		functionLogger.Error().Msg("failed to get database connection")
 		return errors.New("failed to get database connection")
 	}
-	// todo validate the user owns the existing cron or fail
-	result := db.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(&cron)
+
+	var existingCron Cron
+	db.First(&existingCron, "id = ?", cron.ID)
+	if cron.UserID != userId {
+		functionLogger.Warn().Msg("attempt to modify another user's cron")
+		return errors.New("constraint: attempt to modify another user's cron")
+	}
+
+	result := db.Save(&cron)
 	if result.Error != nil {
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
 		return result.Error
@@ -378,7 +390,7 @@ func GetAllCrons() ([]Cron, error) {
 	return crons, nil
 }
 
-func UpsertTask(task Task) error {
+func UpsertTask(task Task, userId string) error {
 	functionLogger := databaseContext.Str("function", "UpsertTask").Logger()
 	functionLogger.Debug().Msg("invoked")
 
@@ -387,7 +399,14 @@ func UpsertTask(task Task) error {
 		functionLogger.Error().Msg("failed to get database connection")
 		return errors.New("failed to get database connection")
 	}
-	// todo validate the user owns the existing task or fail
+
+	var existingTask Task
+	db.First(&existingTask, "id = ?", existingTask.ID)
+	if existingTask.UserID != userId {
+		functionLogger.Warn().Msg("attempt to modify another user's task")
+		return errors.New("constraint: attempt to modify another user's task")
+	}
+
 	result := db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&task)
