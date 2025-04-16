@@ -7,7 +7,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"cron-calendar/database"
-	errortypes "cron-calendar/error_types"
 )
 
 var cronContext = log.With().Str("file", "cron.go")
@@ -21,12 +20,18 @@ func PutCron(context *gin.Context) {
 	cron.ID = context.Param("cronId")
 	if err := context.ShouldBindJSON(&cron); err != nil {
 		functionLogger.Err(err).Msg("failed to bind payload to cron structure")
-		panic(errortypes.GenerateValidationError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 	// todo: validate schedule
 	if err := database.UpsertCron(cron); err != nil {
 		functionLogger.Err(err).Msg("failed to write cron to database")
-		panic(errortypes.GenerateDatabaseError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -66,7 +71,10 @@ func DeleteCron(context *gin.Context) {
 	cronId := context.Param("cronId")
 	if err := database.DeleteCronByUserAndId(userId, cronId); err != nil {
 		functionLogger.Err(err).Msg("failed to delete cron from database")
-		panic(errortypes.GenerateDatabaseError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -81,7 +89,10 @@ func GetAllCrons(context *gin.Context) {
 	crons, err := database.GetCronsByUserId(userId)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to get crons from database")
-		panic(errortypes.GenerateDatabaseError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 
 	functionLogger.Debug().Msg("returning with success")

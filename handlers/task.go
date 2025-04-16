@@ -7,7 +7,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"cron-calendar/database"
-	errortypes "cron-calendar/error_types"
 )
 
 var taskContext = log.With().Str("file", "task.go")
@@ -21,12 +20,18 @@ func PutTask(context *gin.Context) {
 	task.ID = context.Param("taskId")
 	if err := context.ShouldBindJSON(&task); err != nil {
 		functionLogger.Err(err).Msg("failed to bind payload to task structure")
-		panic(errortypes.GenerateValidationError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 
 	if err := database.UpsertTask(task); err != nil {
 		functionLogger.Err(err).Msg("failed to write task to database")
-		panic(errortypes.GenerateDatabaseError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -66,7 +71,10 @@ func DeleteTask(context *gin.Context) {
 	taskId := context.Param("taskId")
 	if err := database.DeleteTaskByUserAndId(userId, taskId); err != nil {
 		functionLogger.Err(err).Msg("failed to delete task from database")
-		panic(errortypes.GenerateDatabaseError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 
 	functionLogger.Debug().Msg("returning with success")
@@ -81,7 +89,10 @@ func GetAllTasks(context *gin.Context) {
 	tasks, err := database.GetTasksByUserId(userId)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to get tasks from database")
-		panic(errortypes.GenerateDatabaseError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 
 	functionLogger.Debug().Msg("returning with success")
