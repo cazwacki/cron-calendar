@@ -8,6 +8,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/logger"
 )
 
 type User struct {
@@ -66,7 +67,9 @@ func getConnection() *gorm.DB {
 
 	if connection == nil {
 		var err error
-		connection, err = gorm.Open(sqlite.Open("cron-calendar.db"), &gorm.Config{})
+		connection, err = gorm.Open(sqlite.Open("cron-calendar.db"), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		})
 		if err != nil {
 			functionLogger.Err(err).Msg("failed to open a database connection; returning nil")
 			return nil
@@ -207,13 +210,17 @@ func UpsertCategory(category Category) error {
 	}
 
 	var existingCategory Category
-	db.First(&existingCategory, "id = ?", existingCategory.ID)
-	if existingCategory.UserID != category.UserID {
+	result := db.First(&existingCategory, "id = ?", category.ID)
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		functionLogger.Err(result.Error).Msg("failed to perform db operation")
+		return result.Error
+	}
+	if existingCategory.UserID != "" && existingCategory.UserID != category.UserID {
 		functionLogger.Warn().Msg("attempt to modify another user's category")
 		return errors.New("constraint: attempt to modify another user's category")
 	}
 
-	result := db.Clauses(clause.OnConflict{
+	result = db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&category)
 	if result.Error != nil {
@@ -295,13 +302,17 @@ func UpsertCron(cron Cron) error {
 	}
 
 	var existingCron Cron
-	db.First(&existingCron, "id = ?", cron.ID)
-	if cron.UserID != cron.UserID {
+	result := db.First(&existingCron, "id = ?", cron.ID)
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		functionLogger.Err(result.Error).Msg("failed to perform db operation")
+		return result.Error
+	}
+	if existingCron.UserID != "" && existingCron.UserID != cron.UserID {
 		functionLogger.Warn().Msg("attempt to modify another user's cron")
 		return errors.New("constraint: attempt to modify another user's cron")
 	}
 
-	result := db.Save(&cron)
+	result = db.Save(&cron)
 	if result.Error != nil {
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
 		return result.Error
@@ -401,13 +412,17 @@ func UpsertTask(task Task) error {
 	}
 
 	var existingTask Task
-	db.First(&existingTask, "id = ?", existingTask.ID)
-	if existingTask.UserID != task.UserID {
+	result := db.First(&existingTask, "id = ?", task.ID)
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		functionLogger.Err(result.Error).Msg("failed to perform db operation")
+		return result.Error
+	}
+	if existingTask.UserID != "" && existingTask.UserID != task.UserID {
 		functionLogger.Warn().Msg("attempt to modify another user's task")
 		return errors.New("constraint: attempt to modify another user's task")
 	}
 
-	result := db.Clauses(clause.OnConflict{
+	result = db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&task)
 	if result.Error != nil {
