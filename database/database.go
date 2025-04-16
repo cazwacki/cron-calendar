@@ -119,24 +119,29 @@ func InsertUser(user User) error {
 	return nil
 }
 
-func GetUserById(userId string) (User, error) {
+func GetUserById(userId string) (*User, error) {
 	functionLogger := databaseContext.Str("function", "GetUserById").Logger()
 	functionLogger.Debug().Msg("invoked")
 
-	var user User
 	db := getConnection()
 	if db == nil {
 		functionLogger.Error().Msg("failed to get database connection")
-		return user, errors.New("failed to get database connection")
+		return nil, errors.New("failed to get database connection")
 	}
+
+	var user User
 	result := db.First(&user, "id = ?", userId)
 	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			functionLogger.Debug().Msg("no user found")
+			return nil, nil
+		}
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
-		return user, result.Error
+		return nil, result.Error
 	}
 
 	functionLogger.Debug().Msg("returning with success")
-	return user, nil
+	return &user, nil
 }
 
 func DeleteUserById(userId string) error {
@@ -148,6 +153,7 @@ func DeleteUserById(userId string) error {
 		functionLogger.Error().Msg("failed to get database connection")
 		return errors.New("failed to get database connection")
 	}
+
 	result := db.Where("id = ?", userId).Delete(&User{})
 	if result.Error != nil {
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
@@ -167,6 +173,7 @@ func UpsertSession(session Session) error {
 		functionLogger.Error().Msg("failed to get database connection")
 		return errors.New("failed to get database connection")
 	}
+
 	result := db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&session)
@@ -179,24 +186,29 @@ func UpsertSession(session Session) error {
 	return nil
 }
 
-func GetSessionById(sessionId string) (Session, error) {
+func GetSessionById(sessionId string) (*Session, error) {
 	functionLogger := databaseContext.Str("function", "GetSessionById").Logger()
 	functionLogger.Debug().Msg("invoked")
 
-	var session Session
 	db := getConnection()
 	if db == nil {
 		functionLogger.Error().Msg("failed to get database connection")
-		return session, errors.New("failed to get database connection")
+		return nil, errors.New("failed to get database connection")
 	}
+
+	var session Session
 	result := db.First(&session, "id = ?", sessionId)
 	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			functionLogger.Debug().Msg("no session found")
+			return nil, nil
+		}
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
-		return session, result.Error
+		return nil, result.Error
 	}
 
 	functionLogger.Debug().Msg("returning with success")
-	return session, nil
+	return &session, nil
 }
 
 func UpsertCategory(category Category) error {
@@ -232,24 +244,29 @@ func UpsertCategory(category Category) error {
 	return nil
 }
 
-func GetCategoryByUserAndId(userId string, categoryId string) (Category, error) {
+func GetCategoryByUserAndId(userId string, categoryId string) (*Category, error) {
 	functionLogger := databaseContext.Str("function", "GetCategoryByUserAndId").Logger()
 	functionLogger.Debug().Msg("invoked")
 
-	var category Category
 	db := getConnection()
 	if db == nil {
 		functionLogger.Error().Msg("failed to get database connection")
-		return category, errors.New("failed to get database connection")
+		return nil, errors.New("failed to get database connection")
 	}
+
+	var category Category
 	result := db.Where("user_id = ?", userId).First(&category, "id = ?", categoryId)
 	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			functionLogger.Debug().Msg("no category found")
+			return nil, nil
+		}
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
-		return category, result.Error
+		return nil, result.Error
 	}
 
 	functionLogger.Debug().Msg("returning with success")
-	return category, nil
+	return &category, nil
 }
 
 func DeleteCategoryByUserAndId(userId string, categoryId string) error {
@@ -261,6 +278,7 @@ func DeleteCategoryByUserAndId(userId string, categoryId string) error {
 		functionLogger.Error().Msg("failed to get database connection")
 		return errors.New("failed to get database connection")
 	}
+
 	result := db.Where("user_id = ?", userId).Where("id = ?", categoryId).Delete(&Category{})
 	if result.Error != nil {
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
@@ -281,6 +299,7 @@ func GetCategoriesByUserId(userId string) ([]Category, error) {
 		functionLogger.Error().Msg("failed to get database connection")
 		return categories, errors.New("failed to get database connection")
 	}
+
 	result := db.Where("user_id = ?", userId).Find(&categories)
 	if result.Error != nil {
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
@@ -322,24 +341,29 @@ func UpsertCron(cron Cron) error {
 	return nil
 }
 
-func GetCronByUserAndId(userId string, cronId string) (Cron, error) {
+func GetCronByUserAndId(userId string, cronId string) (*Cron, error) {
 	functionLogger := databaseContext.Str("function", "GetCronByUserAndId").Logger()
 	functionLogger.Debug().Msg("invoked")
 
-	var cron Cron
 	db := getConnection()
 	if db == nil {
 		functionLogger.Error().Msg("failed to get database connection")
-		return cron, errors.New("failed to get database connection")
+		return nil, errors.New("failed to get database connection")
 	}
+
+	var cron Cron
 	result := db.Where("user_id = ?", userId).First(&cron, "id = ?", cronId)
 	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			functionLogger.Debug().Msg("no cron found")
+			return nil, nil
+		}
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
-		return cron, result.Error
+		return nil, result.Error
 	}
 
 	functionLogger.Debug().Msg("returning with success")
-	return cron, nil
+	return &cron, nil
 }
 
 func DeleteCronByUserAndId(userId string, cronId string) error {
@@ -351,6 +375,7 @@ func DeleteCronByUserAndId(userId string, cronId string) error {
 		functionLogger.Error().Msg("failed to get database connection")
 		return errors.New("failed to get database connection")
 	}
+
 	result := db.Where("user_id = ?", userId).Where("id = ?", cronId).Delete(&Cron{})
 	if result.Error != nil {
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
@@ -371,6 +396,7 @@ func GetCronsByUserId(userId string) ([]Cron, error) {
 		functionLogger.Error().Msg("failed to get database connection")
 		return crons, errors.New("failed to get database connection")
 	}
+
 	result := db.Where("user_id = ?", userId).Find(&crons)
 	if result.Error != nil {
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
@@ -391,6 +417,7 @@ func GetAllCrons() ([]Cron, error) {
 		functionLogger.Error().Msg("failed to get database connection")
 		return crons, errors.New("failed to get database connection")
 	}
+
 	result := db.Find(&crons)
 	if result.Error != nil {
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
@@ -434,7 +461,7 @@ func UpsertTask(task Task) error {
 	return nil
 }
 
-func GetTaskByUserAndId(userId string, taskId string) (Task, error) {
+func GetTaskByUserAndId(userId string, taskId string) (*Task, error) {
 	functionLogger := databaseContext.Str("function", "GetTaskByUserAndId").Logger()
 	functionLogger.Debug().Msg("invoked")
 
@@ -442,16 +469,21 @@ func GetTaskByUserAndId(userId string, taskId string) (Task, error) {
 	db := getConnection()
 	if db == nil {
 		functionLogger.Error().Msg("failed to get database connection")
-		return task, errors.New("failed to get database connection")
+		return nil, errors.New("failed to get database connection")
 	}
+
 	result := db.Where("user_id = ?", userId).First(&task, "id = ?", taskId)
 	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			functionLogger.Debug().Msg("no task found")
+			return nil, nil
+		}
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
-		return task, result.Error
+		return nil, result.Error
 	}
 
 	functionLogger.Debug().Msg("returning with success")
-	return task, nil
+	return &task, nil
 }
 
 func DeleteTaskByUserAndId(userId string, taskId string) error {
