@@ -39,14 +39,23 @@ func GetCron(context *gin.Context) {
 
 	userId := context.GetString("userId")
 	cronId := context.Param("cronId")
+
 	cron, err := database.GetCronByUserAndId(userId, cronId)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to read cron from database")
-		panic(errortypes.GenerateDatabaseError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	if cron == nil {
+		functionLogger.Debug().Msg("no cron found")
+		context.AbortWithStatus(http.StatusNotFound)
+		return
 	}
 
 	functionLogger.Debug().Msg("returning with success")
-	context.AbortWithStatusJSON(http.StatusOK, cron)
+	context.AbortWithStatusJSON(http.StatusOK, &cron)
 }
 
 func DeleteCron(context *gin.Context) {

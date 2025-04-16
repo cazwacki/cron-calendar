@@ -50,13 +50,24 @@ func Login(context *gin.Context) {
 	var providedUser database.User
 	if err := context.ShouldBindJSON(&providedUser); err != nil {
 		functionLogger.Err(err).Msg("failed to bind payload to user structure")
-		panic(errortypes.GenerateValidationError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 
 	dbUser, err := database.GetUserById(providedUser.ID)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to get user from database")
-		panic(errortypes.GenerateDatabaseError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	if dbUser == nil {
+		functionLogger.Debug().Msg("no user found")
+		context.AbortWithStatus(http.StatusUnauthorized)
+		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(providedUser.Password)); err != nil {

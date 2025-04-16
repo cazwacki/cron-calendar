@@ -39,14 +39,23 @@ func GetTask(context *gin.Context) {
 
 	userId := context.GetString("userId")
 	taskId := context.Param("taskId")
+
 	task, err := database.GetTaskByUserAndId(userId, taskId)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to read task from database")
-		panic(errortypes.GenerateDatabaseError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	if task == nil {
+		functionLogger.Debug().Msg("no task found")
+		context.AbortWithStatus(http.StatusNotFound)
+		return
 	}
 
 	functionLogger.Debug().Msg("returning with success")
-	context.AbortWithStatusJSON(http.StatusOK, task)
+	context.AbortWithStatusJSON(http.StatusOK, &task)
 }
 
 func DeleteTask(context *gin.Context) {

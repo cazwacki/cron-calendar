@@ -39,14 +39,23 @@ func GetCategory(context *gin.Context) {
 
 	userId := context.GetString("userId")
 	categoryId := context.Param("categoryId")
+
 	category, err := database.GetCategoryByUserAndId(userId, categoryId)
 	if err != nil {
 		functionLogger.Err(err).Msg("failed to read category from database")
-		panic(errortypes.GenerateDatabaseError(err.Error()))
+		context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	if category == nil {
+		functionLogger.Debug().Msg("no category found")
+		context.AbortWithStatus(http.StatusNotFound)
+		return
 	}
 
 	functionLogger.Debug().Msg("returning with success")
-	context.AbortWithStatusJSON(http.StatusAccepted, category)
+	context.AbortWithStatusJSON(http.StatusAccepted, &category)
 }
 
 func DeleteCategory(context *gin.Context) {
