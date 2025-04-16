@@ -2,14 +2,13 @@ package middleware
 
 import (
 	"crypto/sha3"
-	"errors"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
 	"cron-calendar/database"
-	errortypes "cron-calendar/error_types"
 )
 
 var authorizeContext = log.With().Str("file", "authorize.go")
@@ -22,13 +21,17 @@ func ValidateAuthorization() gin.HandlerFunc {
 		sessionId := context.GetHeader("Session-ID")
 		if sessionId == "" {
 			functionLogger.Warn().Msg("attempt to hit auth-guarded endpoint without a session")
-			panic(errortypes.GenerateAuthorizationError("attempt to hit auth-guarded endpoint without a session"))
+			context.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
+
 		hash := sha3.New256()
 		_, err := hash.Write([]byte(sessionId))
 		if err != nil {
 			functionLogger.Err(err).Msg("failed to write the generated session ID to hash")
-			panic(errors.New("failed to write the generated session ID to hash"))
+			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
 		}
 		finalHash := hash.Sum(nil)
 		sessionId = string(finalHash)
@@ -36,11 +39,21 @@ func ValidateAuthorization() gin.HandlerFunc {
 		session, err := database.GetSessionById(sessionId)
 		if err != nil {
 			functionLogger.Err(err).Msg("failed to fetch user session from database")
-			panic(errortypes.GenerateDatabaseError(err.Error()))
+			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
 		}
+		if session == nil {
+			functionLogger.Debug().Msg("session not found")
+			context.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
 		if time.Now().After(session.ExpiresAt) {
 			functionLogger.Debug().Msg("session is expired")
-			panic(errortypes.GenerateAuthorizationError("session is expired"))
+			context.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 
 		functionLogger.Debug().Msg("returning with success")
