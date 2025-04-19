@@ -103,10 +103,10 @@ func startHttpService(db *database.Database) {
 		authNeeded.GET("/cron/:cronId", handlers.GetCronHandler(db))
 		authNeeded.DELETE("/cron/:cronId", handlers.DeleteCronHandler(db))
 		// task management
-		authNeeded.POST("/task", handlers.GetAllTasks)
-		authNeeded.PUT("/task/:taskId", handlers.PutTask)
-		authNeeded.GET("/task/:taskId", handlers.GetTask)
-		authNeeded.DELETE("/task/:taskId", handlers.DeleteTask)
+		authNeeded.POST("/task", handlers.GetAllTasksHandler(db))
+		authNeeded.PUT("/task/:taskId", handlers.PutTaskHandler(db))
+		authNeeded.GET("/task/:taskId", handlers.GetTaskHandler(db))
+		authNeeded.DELETE("/task/:taskId", handlers.DeleteTaskHandler(db))
 	}
 	functionLogger.Debug().Msg("listening")
 	router.Run()

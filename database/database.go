@@ -384,7 +384,7 @@ func (d *Database) DeleteTaskByIdAndUserId(id string, userId string) error {
 	return nil
 }
 
-func (d *Database) GetTasksByUserId(userId string) ([]Task, error) {
+func (d *Database) SearchTasksByUserId(userId string) ([]Task, error) {
 	functionLogger := databaseContext.Str("function", "GetTasksByUserId").Logger()
 	functionLogger.Debug().Msg("invoked")
 
