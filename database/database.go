@@ -499,7 +499,7 @@ func (d *Database) GetSessionById(sessionId string) (*Session, error) {
 	err := d.establishConnection()
 	if err != nil {
 		functionLogger.Error().Msg("failed to get database connection")
-		return errors.New("failed to get database connection")
+		return nil, errors.New("failed to get database connection")
 	}
 
 	var session Session
