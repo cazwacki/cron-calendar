@@ -13,7 +13,7 @@ import (
 
 var authorizeContext = log.With().Str("file", "authorize.go")
 
-func ValidateAuthorization() gin.HandlerFunc {
+func ValidateAuthorization(db database.UserDB) gin.HandlerFunc {
 	return func(context *gin.Context) {
 		functionLogger := authorizeContext.Str("function", "ValidateAuthorization").Logger()
 		functionLogger.Debug().Msg("invoked")
@@ -36,7 +36,7 @@ func ValidateAuthorization() gin.HandlerFunc {
 		finalHash := hash.Sum(nil)
 		sessionId = string(finalHash)
 
-		session, err := database.GetSessionById(sessionId)
+		session, err := db.GetSessionById(sessionId)
 		if err != nil {
 			functionLogger.Err(err).Msg("failed to fetch user session from database")
 			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{

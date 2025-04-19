@@ -89,7 +89,7 @@ func startHttpService(db *database.Database) {
 	router.POST("/user/login", handlers.LoginHandler(db))
 
 	authNeeded := router.Group("/")
-	authNeeded.Use(middleware.ValidateAuthorization())
+	authNeeded.Use(middleware.ValidateAuthorization(db))
 	{
 		authNeeded.DELETE("/user/destroy", handlers.DestroyUserHandler(db))
 		// category management
