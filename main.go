@@ -19,51 +19,53 @@ import (
 
 var fileContext = log.With().Str("file", "main.go")
 
-func generateTasks(ctx context.Context) (int, error) {
-	functionLogger := fileContext.Str("function", "generateTasks").Logger()
-	functionLogger.Debug().Msg("invoked")
+func createTaskGenerator(db *database.Database) tasker.TaskFunc {
+	return func(ctx context.Context) (int, error) {
+		functionLogger := fileContext.Str("function", "createTaskGenerator").Logger()
+		functionLogger.Debug().Msg("invoked")
 
-	crons, err := database.GetAllCrons()
-	if err != nil {
-		functionLogger.Err(err).Msg("failed to get crons from db")
-		return 1, err
-	}
-
-	for _, cron := range crons {
-		completeExpression := fmt.Sprintf("0 0 0 %s", cron.Schedule)
-		now := time.Now()
-		nowTruncated := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-		taskDue, err := gronx.New().IsDue(completeExpression, nowTruncated)
+		crons, err := db.GetAllCrons()
 		if err != nil {
-			functionLogger.Warn().AnErr("err", err).Msgf("failed to evaluate cron %s's expression: %s; skipping", cron.ID, cron.Schedule)
-			continue
+			functionLogger.Err(err).Msg("failed to get crons from db")
+			return 1, err
 		}
-		shouldCreateTask := taskDue && cron.Enabled
-		if shouldCreateTask {
-			var newTask database.Task
-			functionLogger.Debug().Msgf("cron %s is due for task creation", cron.ID)
-			uuid, err := uuid.NewV7()
+
+		for _, cron := range crons {
+			completeExpression := fmt.Sprintf("0 0 0 %s", cron.Schedule)
+			now := time.Now()
+			nowTruncated := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+			taskDue, err := gronx.New().IsDue(completeExpression, nowTruncated)
 			if err != nil {
-				functionLogger.Warn().AnErr("err", err).Msgf("failed to generate uuid for cron %s; skipping", cron.ID)
+				functionLogger.Warn().AnErr("err", err).Msgf("failed to evaluate cron %s's expression: %s; skipping", cron.ID, cron.Schedule)
 				continue
 			}
-			newTask.ID = uuid.String()
-			newTask.Name = cron.Name
-			newTask.UserID = cron.UserID
-			newTask.CategoryID = cron.CategoryID
-			newTask.CronID = &cron.ID
-			fmt.Printf("%+v\n", newTask)
-			if err := database.UpsertTask(newTask); err != nil {
-				functionLogger.Err(err).Msg("failed to write back to database")
+			shouldCreateTask := taskDue && cron.Enabled
+			if shouldCreateTask {
+				var newTask database.Task
+				functionLogger.Debug().Msgf("cron %s is due for task creation", cron.ID)
+				uuid, err := uuid.NewV7()
+				if err != nil {
+					functionLogger.Warn().AnErr("err", err).Msgf("failed to generate uuid for cron %s; skipping", cron.ID)
+					continue
+				}
+				newTask.ID = uuid.String()
+				newTask.Name = cron.Name
+				newTask.UserID = cron.UserID
+				newTask.CategoryID = cron.CategoryID
+				newTask.CronID = &cron.ID
+				fmt.Printf("%+v\n", newTask)
+				if err := db.UpsertTaskIfOwner(newTask); err != nil {
+					functionLogger.Err(err).Msg("failed to write back to database")
+				}
 			}
 		}
-	}
 
-	functionLogger.Debug().Msg("finished processing crons")
-	return 0, err
+		functionLogger.Debug().Msg("finished processing crons")
+		return 0, err
+	}
 }
 
-func startTasker() {
+func startTasker(db *database.Database) {
 	functionLogger := fileContext.Str("function", "startTasker").Logger()
 	functionLogger.Debug().Msg("invoked")
 
@@ -71,13 +73,13 @@ func startTasker() {
 	tasker := tasker.New(tasker.Option{
 		Verbose: false,
 	})
-	tasker.Task(fmt.Sprintf("0 %s * * *", cronHour), generateTasks)
+	tasker.Task(fmt.Sprintf("0 %s * * *", cronHour), createTaskGenerator(db))
 	functionLogger.Debug().Msg("running task manager")
 	tasker.Run()
 	functionLogger.Debug().Msg("complete")
 }
 
-func startHttpService() {
+func startHttpService(db *database.Database) {
 	functionLogger := fileContext.Str("function", "startHttpService").Logger()
 	functionLogger.Debug().Msg("invoked")
 
@@ -91,10 +93,10 @@ func startHttpService() {
 	{
 		authNeeded.DELETE("/user/destroy", handlers.DestroyUser)
 		// category management
-		authNeeded.POST("/category", handlers.GetAllCategories)
-		authNeeded.PUT("/category/:categoryId", handlers.PutCategory)
-		authNeeded.GET("/category/:categoryId", handlers.GetCategory)
-		authNeeded.DELETE("/category/:categoryId", handlers.DeleteCategory)
+		authNeeded.POST("/category", handlers.GetAllCategoriesHandler(db))
+		authNeeded.PUT("/category/:categoryId", handlers.PutCategoryHandler(db))
+		authNeeded.GET("/category/:categoryId", handlers.GetCategoryHandler(db))
+		authNeeded.DELETE("/category/:categoryId", handlers.DeleteCategoryHandler(db))
 		// cron management
 		authNeeded.POST("/cron", handlers.GetAllCrons)
 		authNeeded.PUT("/cron/:cronId", handlers.PutCron)
@@ -114,8 +116,9 @@ func startHttpService() {
 func main() {
 	functionLogger := fileContext.Str("function", "main").Logger()
 	functionLogger.Debug().Msg("started")
-	database.InitializeTables()
-	go startTasker()
-	startHttpService()
+	db := database.Database{}
+	db.InitializeTables()
+	go startTasker(&db)
+	startHttpService(&db)
 	functionLogger.Debug().Msg("complete")
 }
