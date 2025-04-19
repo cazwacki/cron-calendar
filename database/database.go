@@ -350,7 +350,7 @@ func (d *Database) GetTaskByIdAndUserId(id string, userId string) (*Task, error)
 		return nil, errors.New("failed to get database connection")
 	}
 
-	result := d.connection.Where("user_id = ?", userId).First(&task, "id = ?", taskId)
+	result := d.connection.Where("user_id = ?", userId).First(&task, "id = ?", id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			functionLogger.Debug().Msg("no task found")
@@ -374,7 +374,7 @@ func (d *Database) DeleteTaskByIdAndUserId(id string, userId string) error {
 		return errors.New("failed to get database connection")
 	}
 
-	result := d.connection.Where("user_id = ?", userId).Where("id = ?", taskId).Delete(&Task{})
+	result := d.connection.Where("user_id = ?", userId).Where("id = ?", id).Delete(&Task{})
 	if result.Error != nil {
 		functionLogger.Err(result.Error).Msg("failed to perform db operation")
 		return result.Error
