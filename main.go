@@ -85,13 +85,13 @@ func startHttpService(db *database.Database) {
 
 	router := gin.Default()
 
-	router.PUT("/user/register", handlers.RegisterUser)
-	router.POST("/user/login", handlers.Login)
+	router.PUT("/user/register", handlers.RegisterUserHandler(db))
+	router.POST("/user/login", handlers.LoginHandler(db))
 
 	authNeeded := router.Group("/")
 	authNeeded.Use(middleware.ValidateAuthorization())
 	{
-		authNeeded.DELETE("/user/destroy", handlers.DestroyUser)
+		authNeeded.DELETE("/user/destroy", handlers.DestroyUserHandler(db))
 		// category management
 		authNeeded.POST("/category", handlers.GetAllCategoriesHandler(db))
 		authNeeded.PUT("/category/:categoryId", handlers.PutCategoryHandler(db))

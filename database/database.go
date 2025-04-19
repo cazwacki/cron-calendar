@@ -42,10 +42,7 @@ type UserDB interface {
 	InsertUser(user User) error
 	GetUserById(id string) (*User, error)
 	DeleteUserById(id string) error
-}
-
-type SessionDB interface {
-	UpsertSessionIfOwner(session Session) error
+	UpsertSession(session Session) error
 	GetSessionById(id string) (*Session, error)
 }
 
