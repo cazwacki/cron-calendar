@@ -48,7 +48,7 @@ func GetCronHandler(db database.CronDB) gin.HandlerFunc {
 		userId := context.GetString("userId")
 		cronId := context.Param("cronId")
 
-		cron, err := db.GetCronByIdAndUserId(userId, cronId)
+		cron, err := db.GetCronByIdAndUserId(cronId, userId)
 		if err != nil {
 			functionLogger.Err(err).Msg("failed to read cron from database")
 			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -75,7 +75,7 @@ func DeleteCronHandler(db database.CronDB) gin.HandlerFunc {
 
 		userId := context.GetString("userId")
 		cronId := context.Param("cronId")
-		if err := db.DeleteCronByIdAndUserId(userId, cronId); err != nil {
+		if err := db.DeleteCronByIdAndUserId(cronId, userId); err != nil {
 			functionLogger.Err(err).Msg("failed to delete cron from database")
 			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),

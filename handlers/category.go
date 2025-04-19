@@ -48,7 +48,7 @@ func GetCategoryHandler(db database.CategoryDB) gin.HandlerFunc {
 		userId := context.GetString("userId")
 		categoryId := context.Param("categoryId")
 
-		category, err := db.GetCategoryByIdAndUserId(userId, categoryId)
+		category, err := db.GetCategoryByIdAndUserId(categoryId, userId)
 		if err != nil {
 			functionLogger.Err(err).Msg("failed to read category from database")
 			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -74,7 +74,7 @@ func DeleteCategoryHandler(db database.CategoryDB) gin.HandlerFunc {
 
 		userId := context.GetString("userId")
 		categoryId := context.Param("categoryId")
-		if err := db.DeleteCategoryByIdAndUserId(userId, categoryId); err != nil {
+		if err := db.DeleteCategoryByIdAndUserId(categoryId, userId); err != nil {
 			functionLogger.Err(err).Msg("failed to delete category from database")
 			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
