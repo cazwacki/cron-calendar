@@ -98,10 +98,10 @@ func startHttpService(db *database.Database) {
 		authNeeded.GET("/category/:categoryId", handlers.GetCategoryHandler(db))
 		authNeeded.DELETE("/category/:categoryId", handlers.DeleteCategoryHandler(db))
 		// cron management
-		authNeeded.POST("/cron", handlers.GetAllCrons)
-		authNeeded.PUT("/cron/:cronId", handlers.PutCron)
-		authNeeded.GET("/cron/:cronId", handlers.GetCron)
-		authNeeded.DELETE("/cron/:cronId", handlers.DeleteCron)
+		authNeeded.POST("/cron", handlers.GetAllCronsHandler(db))
+		authNeeded.PUT("/cron/:cronId", handlers.PutCronHandler(db))
+		authNeeded.GET("/cron/:cronId", handlers.GetCronHandler(db))
+		authNeeded.DELETE("/cron/:cronId", handlers.DeleteCronHandler(db))
 		// task management
 		authNeeded.POST("/task", handlers.GetAllTasks)
 		authNeeded.PUT("/task/:taskId", handlers.PutTask)
